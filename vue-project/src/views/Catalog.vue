@@ -27,12 +27,16 @@
           :key="product.id"
           cols="12"
           sm="4"
-          @click="goToProductPage(product.id)"
       >
         <product-item
             :product-data="product"
             @item-clicked="goToProductPage"
         />
+        <v-icon 
+          class="favorite-icon" 
+          :color="isFavorite(product) ? 'red' : 'grey'" 
+          @click="toggleFavorite(product)"
+        >mdi-heart</v-icon>
       </v-col>
     </v-row>
 
@@ -41,6 +45,59 @@
       <span>Page {{ currentPage }} of {{ totalPages }}</span>
       <v-btn @click="nextPage" :disabled="currentPage === totalPages">Next</v-btn>
     </div>
+
+    <div class="favorites">
+      <h3>Favorites</h3>
+      <v-row>
+        <v-col
+          v-for="favorite in favorites"
+          :key="favorite.id"
+          cols="12"
+          sm="4"
+        >
+          <product-item
+              :product-data="favorite"
+              @item-clicked="goToProductPage"
+          />
+          <v-icon 
+            class="favorite-icon" 
+            color="red" 
+            @click="toggleFavorite(favorite)"
+          >mdi-heart</v-icon>
+        </v-col>
+      </v-row>
+    </div>
+
+    <div class="cart">
+      <h3>Cart</h3>
+      <v-row>
+        <v-col
+          v-for="item in cart"
+          :key="item.id"
+          cols="12"
+          sm="4"
+        >
+          <product-item
+              :product-data="item"
+              @item-clicked="goToProductPage"
+          />
+          <v-btn @click="removeFromCart(item.id)">Remove from Cart</v-btn>
+        </v-col>
+      </v-row>
+    </div>
+
+    <footer class="team-footer">
+      <div class="container mx-auto py-4 text-center">
+        <h4 class="font-bold text-lg mb-3">Team Members</h4>
+        <ul class="list-none">
+          <li v-for="student in students" :key="student.id" class="mb-2">
+            <a :href="student.github" target="_blank" class="text-blue-500 hover:underline">
+              {{ student.name }} - {{ student.group }}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -61,12 +118,21 @@ export default defineComponent({
     const router = useRouter();
     const route = useRoute();
 
-    const search = ref(typeof route.query.search === 'string' ? route.query.search : '');
-    const minPrice = ref(typeof route.query.minPrice === 'string' ? route.query.minPrice : '');
-    const maxPrice = ref(typeof route.query.maxPrice === 'string' ? route.query.maxPrice : '');
-    const selectedCategory = ref(typeof route.query.category === 'string' ? route.query.category : '');
-    const currentPage = ref(Number(route.query.page) || 1);
+    const search = ref<string>(typeof route.query.search === 'string' ? route.query.search : '');
+    const minPrice = ref<string>(typeof route.query.minPrice === 'string' ? route.query.minPrice : '');
+    const maxPrice = ref<string>(typeof route.query.maxPrice === 'string' ? route.query.maxPrice : '');
+    const selectedCategory = ref<string>(typeof route.query.category === 'string' ? route.query.category : '');
+    const currentPage = ref<number>(Number(route.query.page) || 1);
     const productsPerPage = 10;
+
+    const favorites = ref<any[]>(JSON.parse(localStorage.getItem('favorites') || '[]'));
+    const cart = ref<any[]>(JSON.parse(localStorage.getItem('cart') || '[]'));
+
+    const students = ref([
+      { id: 1, name: 'Mamontova Tetiana', group: '343-2', github: 'https://github.com/tani4kaa' },
+      { id: 2, name: 'Redko Bohdana', group: '343-2', github: 'https://github.com/bohdana13' },
+      { id: 3, name: 'Rotar Elizabeth', group: '343-2', github: 'https://github.com/BessieLili' }
+    ]);
 
     const categories = computed(() => {
       return Array.from(new Set(store.products.map(product => product.category)));
@@ -121,6 +187,35 @@ export default defineComponent({
       updateQueryParams();
     };
 
+    const toggleFavorite = (product: any) => {
+      const index = favorites.value.findIndex(fav => fav.id === product.id);
+      if (index !== -1) {
+        favorites.value.splice(index, 1);
+      } else {
+        favorites.value.push(product);
+      }
+      localStorage.setItem('favorites', JSON.stringify(favorites.value));
+    };
+
+    const isFavorite = (product: any) => {
+      return favorites.value.some(fav => fav.id === product.id);
+    };
+
+    const addToCart = (product: any) => {
+      if (!cart.value.find(item => item.id === product.id)) {
+        cart.value.push(product);
+        localStorage.setItem('cart', JSON.stringify(cart.value));
+      }
+    };
+
+    const removeFromCart = (id: number) => {
+      const index = cart.value.findIndex(item => item.id === id);
+      if (index !== -1) {
+        cart.value.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cart.value));
+      }
+    };
+
     const updateQueryParams = () => {
       router.replace({
         query: {
@@ -133,10 +228,17 @@ export default defineComponent({
       });
     };
 
-    watch([search, minPrice, maxPrice, selectedCategory, currentPage], updateQueryParams);
+    watch(
+      cart,
+      (newCart) => {
+        localStorage.setItem('cart', JSON.stringify(newCart));
+      },
+      { deep: true }
+    );
 
     onMounted(async () => {
       await store.fetchProductsFromDB();
+      cart.value = JSON.parse(localStorage.getItem('cart') || '[]');
     });
 
     return {
@@ -151,7 +253,14 @@ export default defineComponent({
       totalPages,
       nextPage,
       previousPage,
-      clearFilters
+      clearFilters,
+      toggleFavorite,
+      isFavorite,
+      favorites,
+      cart,
+      addToCart,
+      removeFromCart,
+      students
     };
   }
 });
@@ -171,5 +280,31 @@ export default defineComponent({
 
 .pagination v-btn {
   margin: 0 10px;
+}
+
+.favorites {
+  margin-top: 40px;
+}
+
+.cart {
+  margin-top: 40px;
+}
+
+.favorite-icon {
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.team-footer {
+  background-color: #f8f9fa;
+  padding: 20px 0;
+}
+
+.team-footer ul {
+  padding: 0;
+}
+
+.team-footer li {
+  list-style-type: none;
 }
 </style>
