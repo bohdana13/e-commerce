@@ -1,128 +1,152 @@
 <template>
   <div class="products-list">
-    <v-text-field v-model="search" clearable label="Search products"></v-text-field>
-    <v-row>
-      <v-col cols="6" sm="3">
-        <v-text-field v-model="minPrice" type="number" label="Min Price" clearable></v-text-field>
-      </v-col>
-      <v-col cols="6" sm="3">
-        <v-text-field v-model="maxPrice" type="number" label="Max Price" clearable></v-text-field>
-      </v-col>
-      <v-col cols="12" sm="3">
-        <v-select 
-          v-model="selectedCategory" 
-          :items="categories" 
-          label="Select Category" 
-          clearable>
-        </v-select>
-      </v-col>
-      <v-col cols="12" sm="3">
-        <v-btn @click="clearFilters">All Products</v-btn>
-      </v-col>
-    </v-row>
+    <v-container>
+    <v-container class="cart-button-container">
+      <v-btn color="primary" class="ma-4" large @click="goToCartPage">
+        View Cart ({{ cart.length }})
+      </v-btn>
+      <v-btn color="primary" class="ma-4" large @click="goToFavoritesPage">
+    View Favorites
+  </v-btn>
+    </v-container>
+    
+      <v-row class="mb-4" align="center">
+        <v-col cols="12" sm="4">
+          <v-text-field 
+            v-model="search" 
+            clearable 
+            label="Search Products" 
+            outlined
+            class="ma-2"
+          />
+        </v-col>
+
+        <v-col cols="6" sm="3">
+          <v-text-field 
+            v-model="minPrice" 
+            type="number" 
+            label="Min Price" 
+            clearable 
+            outlined
+            class="ma-2"
+          />
+        </v-col>
+        <v-col cols="6" sm="3">
+          <v-text-field 
+            v-model="maxPrice" 
+            type="number" 
+            label="Max Price" 
+            clearable 
+            outlined
+            class="ma-2"
+          />
+        </v-col>
+
+        
+        <v-col cols="12" sm="4">
+          <v-select 
+            v-model="selectedCategory" 
+            :items="categories" 
+            label="Category" 
+            clearable 
+            outlined
+            class="ma-2"
+          />
+        </v-col>
+
+        <v-col cols="12" sm="2">
+          <v-btn color="secondary" @click="clearFilters" class="ma-2">
+            Reset Filters
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
+
 
     <v-row no-gutters>
       <v-col
-          v-for="product in paginatedProducts"
-          :key="product.id"
-          cols="12"
-          sm="4"
+        v-for="product in paginatedProducts"
+        :key="product.id"
+        cols="12"
+        sm="4"
       >
-        <product-item
-            :product-data="product"
-            @item-clicked="goToProductPage"
-        />
-        <v-icon 
-          class="favorite-icon" 
-          :color="isFavorite(product) ? 'red' : 'grey'" 
-          @click="toggleFavorite(product)"
-        >mdi-heart</v-icon>
+        <v-card
+          class="mx-2 my-3"
+          outlined
+        >
+          <v-img
+            :src="product.image"
+            height="150"
+            class="mb-2"
+          ></v-img>
+          <v-card-title class="headline">{{ product.title }}</v-card-title>
+          <v-card-subtitle>\${{ product.price }}</v-card-subtitle>
+          <v-card-actions>
+            <v-btn color="primary" @click="addToCart(product)">Add to Cart</v-btn>
+            <v-icon 
+              class="favorite-icon ml-auto" 
+              :color="isFavorite(product) ? 'red' : 'grey'" 
+              @click="toggleFavorite(product)">
+              mdi-heart
+            </v-icon>
+          </v-card-actions>
+        </v-card>
       </v-col>
     </v-row>
 
-    <div class="pagination">
-      <v-btn @click="previousPage" :disabled="currentPage === 1">Previous</v-btn>
+    <div class="pagination mt-4">
+      <v-btn icon @click="previousPage" :disabled="currentPage === 1">
+        <v-icon>mdi-chevron-left</v-icon>
+      </v-btn>
       <span>Page {{ currentPage }} of {{ totalPages }}</span>
-      <v-btn @click="nextPage" :disabled="currentPage === totalPages">Next</v-btn>
+      <v-btn icon @click="nextPage" :disabled="currentPage === totalPages">
+        <v-icon>mdi-chevron-right</v-icon>
+      </v-btn>
     </div>
 
-    <div class="favorites">
-      <h3>Favorites</h3>
-      <v-row>
-        <v-col
-          v-for="favorite in favorites"
-          :key="favorite.id"
-          cols="12"
+
+    
+
+    <footer class="team-footer text-center pa-4">
+      <h4 class="font-weight-bold mb-3">Meet Our Team</h4>
+      <v-row justify="center">
+        <v-col 
+          v-for="student in students" 
+          :key="student.id" 
+          cols="12" 
           sm="4"
-        >
-          <product-item
-              :product-data="favorite"
-              @item-clicked="goToProductPage"
-          />
-          <v-icon 
-            class="favorite-icon" 
-            color="red" 
-            @click="toggleFavorite(favorite)"
-          >mdi-heart</v-icon>
+          class="text-center">
+          <a :href="student.github" target="_blank" class="text-decoration-none">
+            <v-avatar size="80" class="mb-2">
+              <v-icon color="primary">mdi-account-circle</v-icon>
+            </v-avatar>
+            <p class="mb-0">{{ student.name }}</p>
+            <p class="text-muted">{{ student.group }}</p>
+          </a>
         </v-col>
       </v-row>
-    </div>
-
-    <div class="cart">
-      <h3>Cart</h3>
-      <v-row>
-        <v-col
-          v-for="item in cart"
-          :key="item.id"
-          cols="12"
-          sm="4"
-        >
-          <product-item
-              :product-data="item"
-              @item-clicked="goToProductPage"
-          />
-          <v-btn @click="removeFromCart(item.id)">Remove from Cart</v-btn>
-        </v-col>
-      </v-row>
-    </div>
-
-    <footer class="team-footer">
-      <div class="container mx-auto py-4 text-center">
-        <h4 class="font-bold text-lg mb-3">Team Members</h4>
-        <ul class="list-none">
-          <li v-for="student in students" :key="student.id" class="mb-2">
-            <a :href="student.github" target="_blank" class="text-blue-500 hover:underline">
-              {{ student.name }} - {{ student.group }}
-            </a>
-          </li>
-        </ul>
-      </div>
     </footer>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import ProductItem from "../components/ProductItem.vue";
 import { computed, ref, onMounted, watch } from "vue";
 import { productsStore } from "../stores/products";
 import { useRouter, useRoute } from "vue-router";
 
 export default defineComponent({
   name: 'CatalogView',
-  components: {
-    ProductItem
-  },
   setup() {
     const store = productsStore();
     const router = useRouter();
     const route = useRoute();
 
-    const search = ref<string>(typeof route.query.search === 'string' ? route.query.search : '');
-    const minPrice = ref<string>(typeof route.query.minPrice === 'string' ? route.query.minPrice : '');
-    const maxPrice = ref<string>(typeof route.query.maxPrice === 'string' ? route.query.maxPrice : '');
-    const selectedCategory = ref<string>(typeof route.query.category === 'string' ? route.query.category : '');
-    const currentPage = ref<number>(Number(route.query.page) || 1);
+    const search = ref<string>('');
+    const minPrice = ref<string>('');
+    const maxPrice = ref<string>('');
+    const selectedCategory = ref<string>('');
+    const currentPage = ref<number>(1);
     const productsPerPage = 10;
 
     const favorites = ref<any[]>(JSON.parse(localStorage.getItem('favorites') || '[]'));
@@ -137,10 +161,6 @@ export default defineComponent({
     const categories = computed(() => {
       return Array.from(new Set(store.products.map(product => product.category)));
     });
-
-    const goToProductPage = (id: number) => {
-      router.push({ name: 'ProductView', params: { id } });
-    };
 
     const filteredProducts = computed(() => {
       return store.products.filter(product => {
@@ -164,19 +184,18 @@ export default defineComponent({
       return filteredProducts.value.slice(start, end);
     });
 
-    const nextPage = () => {
-      if (currentPage.value < totalPages.value) {
-        currentPage.value++;
-        updateQueryParams();
-      }
-    };
+  const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
 
-    const previousPage = () => {
-      if (currentPage.value > 1) {
-        currentPage.value--;
-        updateQueryParams();
-      }
-    };
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
 
     const clearFilters = () => {
       search.value = '';
@@ -184,7 +203,6 @@ export default defineComponent({
       maxPrice.value = '';
       selectedCategory.value = '';
       currentPage.value = 1;
-      updateQueryParams();
     };
 
     const toggleFavorite = (product: any) => {
@@ -208,37 +226,15 @@ export default defineComponent({
       }
     };
 
-    const removeFromCart = (id: number) => {
-      const index = cart.value.findIndex(item => item.id === id);
-      if (index !== -1) {
-        cart.value.splice(index, 1);
-        localStorage.setItem('cart', JSON.stringify(cart.value));
-      }
+    const goToCartPage = () => {
+      router.push({ name: 'CartView' });
     };
-
-    const updateQueryParams = () => {
-      router.replace({
-        query: {
-          search: search.value || undefined,
-          minPrice: minPrice.value || undefined,
-          maxPrice: maxPrice.value || undefined,
-          category: selectedCategory.value || undefined,
-          page: currentPage.value !== 1 ? currentPage.value : undefined
-        }
-      });
-    };
-
-    watch(
-      cart,
-      (newCart) => {
-        localStorage.setItem('cart', JSON.stringify(newCart));
-      },
-      { deep: true }
-    );
+    const goToFavoritesPage = () => {
+  router.push({ name: 'FavoritesView' });
+};
 
     onMounted(async () => {
       await store.fetchProductsFromDB();
-      cart.value = JSON.parse(localStorage.getItem('cart') || '[]');
     });
 
     return {
@@ -247,7 +243,6 @@ export default defineComponent({
       maxPrice,
       selectedCategory,
       categories,
-      goToProductPage,
       paginatedProducts,
       currentPage,
       totalPages,
@@ -259,8 +254,10 @@ export default defineComponent({
       favorites,
       cart,
       addToCart,
-      removeFromCart,
-      students
+      students,
+      goToCartPage,
+        goToFavoritesPage,
+
     };
   }
 });
@@ -268,43 +265,55 @@ export default defineComponent({
 
 <style scoped>
 .products-list {
-  margin: 20px;
+  margin: 20px auto;
+  max-width: 1200px;
+}
+
+.v-card {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.v-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.favorite-icon:hover {
+  cursor: pointer;
+  transform: scale(1.3);
+  transition: transform 0.2s ease;
 }
 
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 20px;
+  gap: 10px;
 }
 
-.pagination v-btn {
-  margin: 0 10px;
-}
-
-.favorites {
-  margin-top: 40px;
-}
-
-.cart {
-  margin-top: 40px;
-}
-
-.favorite-icon {
-  cursor: pointer;
-  font-size: 24px;
+.pagination span {
+  font-weight: bold;
 }
 
 .team-footer {
-  background-color: #f8f9fa;
+  background-color: #f3f3f3;
+  color: #34495e;
   padding: 20px 0;
+  border-top: 2px solid #e0e0e0;
 }
 
-.team-footer ul {
-  padding: 0;
+.team-footer a {
+  text-decoration: none;
+  color: #1abc9c;
 }
 
-.team-footer li {
-  list-style-type: none;
+@media (max-width: 600px) {
+  .products-list {
+    margin: 10px;
+  }
+
+  .pagination {
+    font-size: 0.8rem;
+  }
 }
 </style>
