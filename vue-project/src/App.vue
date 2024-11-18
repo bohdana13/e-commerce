@@ -1,11 +1,12 @@
 <template>
   <div>
-    <header>
+    <header v-if="route.name !== 'NotFound'">
       <v-toolbar title="Application">
         <v-btn
           @click="router.push({ name: 'CartView' })"
           color="primary"
-          variant="elevated">
+          variant="elevated"
+        >
           Items in Cart: {{ store.cart.length }}
         </v-btn>
       </v-toolbar>
@@ -17,10 +18,11 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { productsStore } from './stores/products';
 
 const router = useRouter();
+const route = useRoute();
 const store = productsStore();
 </script>
 
